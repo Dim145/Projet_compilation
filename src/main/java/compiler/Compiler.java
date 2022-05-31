@@ -11,33 +11,32 @@ public class Compiler
     private final List<Rule> grammar;
     private final HashMap<String, HashMap<String, String>> dictionary;
     private final Stack<String> stack;
-    private int index;
     private final StringBuilder output;
-    private String code;
-    private PApplet main;
+    private final String code;
+
+    private int index;
     private List<String> grammarTokens;
-    private boolean isCompilFinich;
+    private boolean isCompilFinish;
 
     public Compiler(PApplet main, String codePath, String keyWordsPath, String rulesPath, String dictionnaryPath)
     {
-        this.main = main;
 
-        this.code = String.join("\n", main.loadStrings(codePath))
+        this.code = String.join("\n", main.loadStrings(main.dataPath(codePath)))
                           .replaceAll("\r", "")
                           .replaceAll("\n", " ")
                           .replaceAll("\t", " ")
                           .trim();
-        this.languageKeywords = String.join("\n", main.loadStrings(keyWordsPath)).split(" ");
+        this.languageKeywords = String.join("\n", main.loadStrings(main.dataPath(keyWordsPath))).split(" ");
 
-        this.grammar = Arrays.stream(main.loadStrings(rulesPath))
+        this.grammar = Arrays.stream(main.loadStrings(main.dataPath(rulesPath)))
                              .map(line -> line.split("\t"))
-                             .map(chars -> new Rule(
-                                     Integer.parseInt(chars[0]),
-                                     chars[1],
-                                     chars[2].split(" ")))
+                             .map(line -> new Rule(
+                                     Integer.parseInt(line[0]),
+                                     line[1],
+                                     line[2].split(" ")))
                 .collect(Collectors.toList());
 
-        String[]   tmpDic    = main.loadStrings(dictionnaryPath);
+        String[]   tmpDic    = main.loadStrings(main.dataPath(dictionnaryPath));
         String[][] scopedDic = Arrays.stream(tmpDic).map(s -> s.split("\t")).collect(Collectors.toList()).toArray(new String[0][0]);
 
         HashMap<String, HashMap<String, String>> dictionary = new HashMap<>();
@@ -101,7 +100,7 @@ public class Compiler
 
     public void compileNextToken() throws Exception
     {
-        if(this.isCompilFinich && index < grammarTokens.size())
+        if(this.isCompilFinish && index < grammarTokens.size())
         {
             throw new Exception("Unreachable code: " + grammarTokens.stream().skip(index).collect(Collectors.toList()));
         }
@@ -149,11 +148,11 @@ public class Compiler
         else switch (element)
         {
             case "pop": index++;break;
-            case "ACC": index++; isCompilFinich = true;break;
+            case "ACC": index++;isCompilFinish = true;break;
         }
 
         if(done())
-            isCompilFinich = true;
+            isCompilFinish = true;
     }
 
     public String getOutPut()

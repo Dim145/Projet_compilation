@@ -35,6 +35,8 @@ public class Main extends PApplet
         float origY = 15 - line * (textAscent() + textDescent());
         try
         {
+            origY += drawText("Début de la compilation\n \n ", origY, Color.WHITE);
+
             compiler = new Compiler(this, "test.txt", "keywords.txt", "rules.txt", "dictionary.csv");
 
             compiler.parseToken();
@@ -44,9 +46,9 @@ public class Main extends PApplet
             {
                 compiler.compileNextToken();
 
-                origY += drawText("input: " + compiler.getInput(), origY, Color.WHITE);
-                origY += drawText("output: " + compiler.getOutPut(), origY, Color.WHITE);
-                origY += drawText("------------------------------------------------------------------", origY, Color.WHITE);
+                origY += drawText("input: " + compiler.getInput(), origY);
+                origY += drawText("output: " + compiler.getOutPut(), origY);
+                origY += drawText("------------------------------------------------------------------", origY);
             }
 
             drawText("Compilation finish", origY + (textAscent() + textDescent()), Color.GREEN);
