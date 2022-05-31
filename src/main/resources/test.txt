@@ -1,0 +1,4 @@
+debut
+    a := 30 ;
+    b := a ;
+fin

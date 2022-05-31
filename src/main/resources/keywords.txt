@@ -1,0 +1,1 @@
+debut fin ; id := + * ( ) nb ε

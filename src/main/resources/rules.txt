@@ -1,0 +1,15 @@
+1	P	debut S fin
+2	S	I R
+3	R	; I R
+4	R	ε
+5	I	id := E
+6	I	ε
+7	E	T E'
+8	E'	+ T E'
+9	E'	ε
+10	T	F T'
+11	T'	* F T'
+12	T'	ε
+13	F	( E )
+14	F	id
+15	F	nb
