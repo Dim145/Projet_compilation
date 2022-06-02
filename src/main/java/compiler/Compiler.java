@@ -164,4 +164,35 @@ public class Compiler
     {
         return grammarTokens.stream().skip(index).collect(Collectors.joining(" "));
     }
+
+    public String getStackString()
+    {
+        List<String> list = new ArrayList<>(stack);
+        Collections.reverse(list);
+        StringBuilder builder = new StringBuilder();
+
+        if (list.size() <= 0)
+        {
+            return builder.toString();
+        }
+
+        builder.append("=======\n");
+        for (int i = 0; i < 7 - list.size(); i++)
+        {
+            builder.append("|     |\n");
+            builder.append("|     |\n");
+            builder.append("|     |\n");
+            builder.append("=======\n");
+        }
+
+        for (String element : list)
+        {
+            builder.append("|     |\n");
+            builder.append('|').append(String.format("%5s", element)).append("|\n");
+            builder.append("|     |\n");
+            builder.append("=======\n");
+        }
+
+        return builder.toString();
+    }
 }
