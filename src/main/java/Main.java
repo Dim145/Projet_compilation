@@ -53,16 +53,7 @@ public class Main extends PApplet
 
         maxLine = 0;
 
-
-        if (exception != null)
-        {
-            origY += drawText("Compilation error\n \n", origY + (textAscent() + textDescent()), Color.RED);
-
-            drawText("error: " + exception.getMessage() + "\n" + Arrays.stream(exception.getStackTrace()).map(
-                            StackTraceElement::toString).collect(Collectors.joining("\n")),
-                    origY + (textAscent() + textDescent()) * 2, Color.RED);
-        }
-        else
+        if(compiler != null)
         {
             stroke(Color.WHITE.getRGB());
             line(0, origY - 2, width, origY - 2);
@@ -97,6 +88,15 @@ public class Main extends PApplet
 
             if (compiler.done()) drawText("Compilation finish", origY + (textAscent() + textDescent()), Color.GREEN);
         }
+
+        if (exception != null)
+        {
+            origY += drawText("Compilation error\n \n", origY + (textAscent() + textDescent()), Color.RED);
+
+            drawText("error: " + exception.getMessage() + "\n" + Arrays.stream(exception.getStackTrace()).map(
+                            StackTraceElement::toString).collect(Collectors.joining("\n")),
+                    origY + (textAscent() + textDescent()) * 2, Color.RED);
+        }
     }
 
     @Override
@@ -105,11 +105,11 @@ public class Main extends PApplet
         switch (key)
         {
             case ' ':
-                if (this.autoRun == null) nextCompilerState();
+                if (this.autoRun == null && this.compiler != null) nextCompilerState();
                 break;
             case 'a':
             case 'A':
-                if (this.autoRun != null) break;
+                if (this.autoRun != null || this.compiler == null) break;
 
                 this.autoRun = new Thread(() ->
                 {
@@ -168,6 +168,7 @@ public class Main extends PApplet
         catch (Exception e)
         {
             this.exception = e;
+            this.compiler = null;
         }
     }
 
@@ -184,9 +185,31 @@ public class Main extends PApplet
     {
         if (c != null) fill(c.getRGB());
 
-        text(text, ORIG_X + decalageX, y);
+        String[] tab = text.split("\n");
 
-        int textLines = text.split("\n").length;
+        int textLines = 0;
+        for (int i = 0; i < tab.length; i++)
+        {
+            if(ORIG_X + decalageX + textWidth(tab[i]) >= width)
+            {
+                int indexDepass = tab[i].length() - 1;
+
+                while(tab[i].charAt(indexDepass) != ' ' || ORIG_X + decalageX + textWidth(tab[i].substring(0, indexDepass)) >= width)
+                    indexDepass--;
+
+                tab[i] = tab[i].substring(0, indexDepass) + "\n" + tab[i].substring(indexDepass);
+            }
+
+            String[] tmp = tab[i].split("\n");
+
+            for (String s : tmp)
+            {
+                text(s, ORIG_X + decalageX, y + (textAscent() + textDescent()) * textLines++);
+            }
+        }
+
+        //text(text, ORIG_X + decalageX, y);
+
         maxLine += textLines;
 
         return (textAscent() + textDescent()) * textLines;

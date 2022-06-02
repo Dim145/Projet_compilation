@@ -1,4 +1,7 @@
 debut
     a := 30 ;
-    b := a;
+    b := a ;
+    c := oui;
+    testE := d * c ;
+    testPar := ( a + 12 );
 fin
