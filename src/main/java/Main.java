@@ -1,17 +1,21 @@
 import compiler.Compiler;
 import processing.core.PApplet;
 import processing.core.PFont;
-import processing.event.KeyEvent;
 import processing.event.MouseEvent;
 
 import java.awt.*;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class Main extends PApplet
 {
     private static final long LINE_INC = 5;
     private static final int ORIG_X = 15;
+
+    private static final int STACK_WIDTH = 50;
+    private static final int STACK_HEIGHT = 30;
+    private static final int MAX_VITESSE = 10;
 
     private Compiler compiler = null;
     private long line = 0;
@@ -30,9 +34,6 @@ public class Main extends PApplet
     public void setup()
     {
         createCompiler();
-
-        PFont font = loadFont("MitraMono-16.vlw");
-        textFont(font, 16);
     }
 
     @Override
@@ -42,31 +43,51 @@ public class Main extends PApplet
 
         float origY = 15 - line * (textAscent() + textDescent());
 
+        String vitesse = "Vitesse: " + ( MAX_VITESSE - this.timeSleep / 250 + 1) + "/" + MAX_VITESSE;
+        text(vitesse, width/2f - textWidth(vitesse)/2, origY);
+
+        origY += drawText(String.format("%-21s", "'a' = autorun") + "'arrow up' = accelere\n" +
+                String.format("%-21s", "'r' = reset") + "'arrow down' = decelere\n" +
+                String.format("%-21s", "'espace' = next step") + "\n \n",
+                origY, Color.WHITE);
+
+        maxLine = 0;
+
+        stroke(Color.WHITE.getRGB());
+        line(0, origY-2, width, origY - 2);
+        origY += (textAscent() + textDescent());
+
+        List<String> tmp = compiler.getStack();
+
+        float baseOrigY = origY;
+
+        for (String st : tmp)
+        {
+            fill(Color.WHITE.getRGB());
+            rect(ORIG_X, origY, STACK_WIDTH, STACK_HEIGHT);
+            fill(Color.BLACK.getRGB());
+            text(st, ORIG_X + STACK_WIDTH / 2f - textWidth(st)/2, origY + STACK_HEIGHT / 2f + (textAscent() + textDescent())/2);
+
+            origY += STACK_HEIGHT + 5;
+        }
+
+        baseOrigY += (origY - baseOrigY)/2;
+
+        baseOrigY += drawText("input: " + compiler.getInput(), baseOrigY, Color.WHITE, STACK_WIDTH + ORIG_X);
+        origY += drawText("output: " + compiler.getOutPut(), baseOrigY, STACK_WIDTH + ORIG_X);
+
+        line(0, origY-2, width, origY - 2);
+        origY += (textAscent() + textDescent());
+
+        if(autoRun != null && autoRun.isAlive())
+            origY += drawText("Compilation automatique en cours...", origY + (textAscent() + textDescent()), Color.CYAN);
+
+        if(compiler.done())
+            drawText("Compilation finish", origY + (textAscent() + textDescent()), Color.GREEN);
+
         try
         {
-            origY += drawText("Debut de la compilation\n \n ", origY, Color.WHITE);
 
-            maxLine = 0;
-
-            origY += drawText("------------------------------------------------------------------", origY);
-
-            String tmp = compiler.getStackString();
-
-            float baseOrigY = origY;
-            origY += drawText(tmp, origY);
-
-            baseOrigY += (origY - baseOrigY)/2;
-
-            baseOrigY += drawText("input: " + compiler.getInput(), baseOrigY, textWidth(tmp) + ORIG_X);
-            drawText("output: " + compiler.getOutPut(), baseOrigY, textWidth(tmp) + ORIG_X);
-
-            origY += drawText("------------------------------------------------------------------", origY);
-
-            if(autoRun != null && autoRun.isAlive())
-                origY += drawText("Compilation automatique en cours...", origY + + (textAscent() + textDescent()), Color.CYAN);
-
-            if(compiler.done())
-                drawText("Compilation finish", origY + (textAscent() + textDescent()), Color.GREEN);
         }
         catch (Exception e)
         {
@@ -113,7 +134,7 @@ public class Main extends PApplet
         }
 
         if(keyCode == DOWN && this.autoRun != null)
-            this.timeSleep += 250;
+            this.timeSleep = Math.min(250 * MAX_VITESSE, this.timeSleep + 250);
 
         if(keyCode == UP && this.autoRun != null)
             this.timeSleep = Math.max(250, this.timeSleep - 250);
@@ -121,13 +142,14 @@ public class Main extends PApplet
 
     private void nextCompilerState()
     {
-        if(!compiler.done()) try
+        try
         {
             compiler.compileNextToken();
         }
         catch (Exception e)
         {
-            throw new RuntimeException(e);
+            if(!compiler.done())
+                throw new RuntimeException(e);
         }
     }
 
@@ -164,7 +186,7 @@ public class Main extends PApplet
         int textLines = text.split("\n").length;
         maxLine += textLines;
 
-        return (textAscent() + textDescent() * 2.5f) * textLines;
+        return (textAscent() + textDescent()) * textLines;
     }
 
     /**
