@@ -21,11 +21,14 @@ public class Compiler
     public Compiler(PApplet main, String codePath, String keyWordsPath, String rulesPath, String dictionnaryPath)
     {
 
-        this.code = String.join("\n", main.loadStrings(main.dataPath(codePath)))
+        String tmp = String.join("\n", main.loadStrings(main.dataPath(codePath)))
                           .replaceAll("\r", "")
                           .replaceAll("\n", " ")
                           .replaceAll("\t", " ")
                           .trim();
+        if(!tmp.endsWith(" ε"))
+            tmp += " ε";
+        code = tmp;
         this.languageKeywords = String.join("\n", main.loadStrings(main.dataPath(keyWordsPath))).split(" ");
 
         this.grammar = Arrays.stream(main.loadStrings(main.dataPath(rulesPath)))
@@ -65,25 +68,41 @@ public class Compiler
 
         for (String token : Arrays.stream(code.split(" ")).filter(t -> t != null && !t.isEmpty()).collect(Collectors.toList()))
         {
-            if(Utils.isNumber(token))
+            String[] tmpTokens = new String[2];
+
+            tmpTokens[0] = token;
+
+            if(token.endsWith(";") && token.length() > 1)
             {
-                tokens.add("nb");
-                continue;
+                tmpTokens[0] = token.substring(0, token.length() - 1);
+                tmpTokens[1] = ";";
             }
 
-            boolean isReserved = Arrays.asList(languageKeywords).contains(token);
-            
-            if(isReserved)
+            for (String tmpToken : tmpTokens)
             {
-                tokens.add(token);
-            }
-            else if (Utils.isAllLetter(token))
-            {
-                tokens.add("id");
-            }
-            else
-            {
-                throw new Exception("token exception: " + token);
+                if(tmpToken == null)
+                    continue;
+
+                if(Utils.isNumber(tmpToken))
+                {
+                    tokens.add("nb");
+                    continue;
+                }
+
+                boolean isReserved = Arrays.asList(languageKeywords).contains(tmpToken);
+
+                if(isReserved)
+                {
+                    tokens.add(tmpToken);
+                }
+                else if (Utils.isAllLetter(tmpToken))
+                {
+                    tokens.add("id");
+                }
+                else
+                {
+                    throw new Exception("token exception: " + tmpToken);
+                }
             }
         }
 
