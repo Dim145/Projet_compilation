@@ -1,0 +1,5 @@
+debut
+	c := ab ;
+    testE := d + 2 + c;
+    testPar := ( a + 12 )
+fin

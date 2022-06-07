@@ -1,0 +1,5 @@
+debut
+	c := oui;
+    testE := ouaip;
+    testPar := testE + loutre;
+fin

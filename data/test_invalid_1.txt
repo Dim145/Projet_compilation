@@ -1,0 +1,5 @@
+debut
+    a := 30 ;
+    b := bn ;
+	c := oui * -8 - 2;
+fin

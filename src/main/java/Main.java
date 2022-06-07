@@ -1,11 +1,13 @@
 import compiler.Compiler;
 import processing.core.PApplet;
-import processing.core.PFont;
 import processing.event.MouseEvent;
 
 import java.awt.*;
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Main extends PApplet
@@ -15,7 +17,9 @@ public class Main extends PApplet
 
     private static final int STACK_WIDTH = 50;
     private static final int STACK_HEIGHT = 30;
-    private static final int MAX_VITESSE = 10;
+
+    private static final int MAX_VITESSE = 20;
+    private static final int PAS_VITESSE = 100;
 
     private Compiler compiler = null;
     private long line = 0;
@@ -24,6 +28,11 @@ public class Main extends PApplet
     private Thread autoRun;
     private int timeSleep = 1000;
     private Exception exception = null;
+
+    private long lastChange = 0;
+    private String codePath;
+
+    private List<File> testFiles = null;
 
     @Override
     public void settings()
@@ -34,6 +43,8 @@ public class Main extends PApplet
     @Override
     public void setup()
     {
+        testFiles = new ArrayList<>();
+
         createCompiler();
     }
 
@@ -44,12 +55,23 @@ public class Main extends PApplet
 
         float origY = 15 - line * (textAscent() + textDescent());
 
-        String vitesse = "Vitesse: " + (MAX_VITESSE - this.timeSleep / 250 + 1) + "/" + MAX_VITESSE;
+        String vitesse = "Vitesse: " + (MAX_VITESSE - this.timeSleep / PAS_VITESSE + 1) + "/" + MAX_VITESSE;
         text(vitesse, width / 2f - textWidth(vitesse) / 2, origY);
 
         origY += drawText(String.format("%-21s", "'a' = autorun") + "'arrow up' = accelere\n" + String.format("%-21s",
                         "'r' = reset") + "'arrow down' = decelere\n" + String.format("%-21s", "'espace' = next step") + "\n \n",
                 origY, Color.WHITE);
+
+        AtomicInteger i = new AtomicInteger();
+        String testFilesStr = testFiles
+                .stream()
+                .map((f) -> i.getAndIncrement() + " = " + f.getName())
+                .collect(Collectors.joining(" , "));
+
+        origY += drawText(testFilesStr, origY, Color.WHITE);
+
+        String currentTestStr = "current testFile: " + this.codePath;
+        origY += drawText(currentTestStr, origY, width/2f - textWidth(currentTestStr)/2f - ORIG_X);
 
         maxLine = 0;
 
@@ -86,7 +108,17 @@ public class Main extends PApplet
                 origY += drawText("Compilation automatique en cours...", origY + (textAscent() + textDescent()),
                         Color.CYAN);
 
-            if (compiler.done()) drawText("Compilation finish", origY + (textAscent() + textDescent()), Color.GREEN);
+            if (compiler.done()) origY += drawText("Compilation finish", origY + (textAscent() + textDescent()), Color.GREEN);
+        }
+
+        try
+        {
+            if(lastChange < dataFile(codePath).lastModified())
+                origY += drawText("Le fichier a changer, veuillez reset la compilation.", origY + (textAscent() + textDescent()), Color.ORANGE);
+        }
+        catch (Exception ignored)
+        {
+            // dans le cas ou le fichier n'existe pas
         }
 
         if (exception != null)
@@ -138,9 +170,25 @@ public class Main extends PApplet
                 break;
         }
 
-        if (keyCode == DOWN && this.autoRun != null) this.timeSleep = Math.min(250 * MAX_VITESSE, this.timeSleep + 250);
+        if(Character.isDigit(key))
+        {
+            int index = key - '0';
 
-        if (keyCode == UP && this.autoRun != null) this.timeSleep = Math.max(250, this.timeSleep - 250);
+            if(index >= 0 && index < testFiles.size())
+            {
+                this.codePath = testFiles.get(index).getName();
+
+                if(this.autoRun != null && this.autoRun.isAlive())
+                    this.autoRun.stop();
+
+                this.autoRun = null;
+
+                this.createCompiler();
+            }
+        }
+
+        if (keyCode == DOWN && this.autoRun != null) this.timeSleep = Math.min(PAS_VITESSE * MAX_VITESSE, this.timeSleep + PAS_VITESSE);
+        if (keyCode == UP   && this.autoRun != null) this.timeSleep = Math.max(PAS_VITESSE, this.timeSleep - PAS_VITESSE);
     }
 
     private void nextCompilerState()
@@ -157,9 +205,19 @@ public class Main extends PApplet
 
     private void createCompiler()
     {
-        compiler = new Compiler(this, "test.txt", "keywords.txt", "rules.txt", "dictionary.csv");
+        testFiles.clear();
+        File dataRep = new File(dataPath(""));
+        for (File f : dataRep.listFiles() )
+            if(f.getName().startsWith("test") && f.getName().endsWith(".txt"))
+                testFiles.add(f);
+
+        this.codePath = testFiles.get(0).getName();
+
         try
         {
+            compiler = new Compiler(this, codePath, "keywords.txt", "rules.txt", "dictionary.csv");
+
+            lastChange = dataFile(codePath).lastModified();
             compiler.parseToken();
 
             this.autoRun = null;

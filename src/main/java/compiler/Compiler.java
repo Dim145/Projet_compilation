@@ -23,11 +23,12 @@ public class Compiler
 
         String tmp = String.join("\n", main.loadStrings(main.dataPath(codePath)))
                           .replaceAll("\r", "")
-                          .replaceAll("\n", " ")
-                          .replaceAll("\t", " ")
+                          .replaceAll("[\n\t]", " ")
                           .trim();
+
         if(!tmp.endsWith(" ε"))
             tmp += " ε";
+
         code = tmp;
         this.languageKeywords = String.join("\n", main.loadStrings(main.dataPath(keyWordsPath))).split(" ");
 
@@ -101,7 +102,7 @@ public class Compiler
                 }
                 else
                 {
-                    throw new Exception("token exception: " + tmpToken);
+                    throw new Exception("Token invalid (not in keywords): " + tmpToken);
                 }
             }
         }
@@ -130,7 +131,7 @@ public class Compiler
         }
 
         if(index == grammarTokens.size())
-            throw new Exception("compilation is finish");
+            throw new Exception("compilation already is finish");
 
         String token = grammarTokens.get(index);
         String popValue = stack.pop();
@@ -154,7 +155,7 @@ public class Compiler
             Rule rule = grammar.stream().filter(r -> r.number == ruleNum).findFirst().orElse(null);
 
             if(rule == null)
-                throw new Exception("unknown rule n°" + ruleNum + "(" + popValue + " " + token + ")");
+                throw new Exception("unknown rule n°" + ruleNum + "[" + element + "]" + "(" + popValue + " " + token + ")");
 
             for (int i = rule.grammar.length; i > 0; i--)
             {

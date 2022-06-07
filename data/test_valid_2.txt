@@ -1,0 +1,5 @@
+debut
+    b := a ;
+	c := oui;
+	d := poussin
+fin
